@@ -1,1 +1,2 @@
-# 3D-Elmer-Motor
+# 3D-Elmer-Motor  
+Example of a 3D motor in Elmer  
