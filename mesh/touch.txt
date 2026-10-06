@@ -1,2 +1,4 @@
 https://github.com/mrkearden/3D-Motor-Mesh  
 
+Location of mesh files  
+Concatenate mesh.elements.1, 2, 3, 4 into mesh.elements  
