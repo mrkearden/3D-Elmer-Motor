@@ -1,0 +1,558 @@
+Header
+  CHECK KEYWORDS "Warn"
+  Mesh DB "." "mesh"
+ Results Directory "result_3D_no_load"
+End
+
+Simulation
+  Coordinate System = Cartesian 3D
+  Simulation Type = Transient
+  Timestepping Method = BDF
+  BDF Order = 2
+  Max Output Level =10 
+  Timestep intervals = 60
+  Timestep Sizes = 4.990019960079841e-05
+  Use Mesh Names = Logical True ! Use the mesh.names from Salome/ElmerGrid
+End
+
+Constants
+  Stefan Boltzmann = 5.6704e-08
+End
+
+! main
+Equation 1
+  Active Solvers(2) = 1 2   ! mg_dyn_solver, flux_solver, 
+End
+
+
+! mg_dyn_solver
+Solver 1
+  Equation = MgDyn2D
+  Procedure = "MagnetoDynamics" "WhitneyAVSolver"
+  Exec Solver = Always
+  Apply Mortar BCs = Logical True
+  Mortar BCs Additive = Logical True
+  Handle Assembly = Logical True
+  Edge Basis = Logical True
+
+   Linear System Solver = Iterative
+  Linear System Iterative Method = idrs 
+Linear System Direct Method = Mumps
+
+  Linear System Robust = True
+  Linear System Robust Start Iteration = Integer 100
+
+  Edge Basis = True
+  Linear System Preconditioning = ILU1
+
+  Linear System Max Iterations = 5000
+  Linear System Robust = True
+  Linear System Residual Output = 100
+  Linear System Convergence Tolerance = 1.0e-5
+
+  Linear System Abort Not Converged  = False
+
+  Nonlinear System Consistent Norm = True
+  Steady State Convergence Tolerance = 1e-4
+
+  Nonlinear System Convergence Without Constraints = Logical True
+  
+  
+  Optimize Bandwidth = Logical False
+
+  Linear System ILUT Tolerance = 1e-06
+
+  Linear System Precondition Recompute = 1
+
+ End
+
+! flux_solver
+Solver 2
+  Equation = CalcFields
+  Procedure = "MagnetoDynamics" "MagnetoDynamicsCalcFields"
+  Exec Solver = Always
+  Angular Frequency = 2098.583892597982
+  Calculate Magnetic Flux = Logical True
+  Calculate Magnetic Field Strength = Logical True
+  Calculate Magnetic Vector Potential = Logical True
+  Calculate Electric Field = Logical True
+  Calculate Current Density = Logical True
+  Calculate Nodal Forces = Logical True
+   Linear System Solver = Iterative
+  Linear System Iterative Method = BigStabl
+Linear System Direct Method = Mumps
+  Linear System Max Iterations = 1000
+  Linear System Convergence Tolerance = 1e-5
+  Linear System Preconditioning = ILU0
+  Linear System ILUT Tolerance = 1e-04
+  Linear System Precondition Recompute = 1
+  Linear System Abort Not Converged = Logical False
+  Linear System Residual Output = 50
+End
+
+! translate_solver
+Solver 3
+  Equation = MeshDeform
+  Procedure = "RigidMeshMapper" "RigidMeshMapper"
+  Exec Solver = Before Timestep
+  Translate Before Rotate = Logical True
+  Cumulative Displacements = Logical False
+End
+
+! mat_solver
+Solver 4
+  Equation = SaveMaterials
+  Procedure = "SaveData" "SaveMaterials"
+  Exec Solver = After Timestep
+  Parameter 2 = Relative Permeability
+End
+
+! bndy_solver
+Solver 5
+  Equation = SaveBoundaryValues
+  Procedure = "SaveData" "SaveBoundaryValues"
+  Exec Solver = After Timestep
+End
+
+! scalar_solver
+Solver 6
+  Equation = SaveScalars
+  Procedure = "SaveData" "SaveScalars"
+  Filename = scalars.dat
+  Exec Solver = After Timestep
+End
+
+! scalar_solver2
+Solver 7
+  Equation = SaveScalars2
+  Procedure = "SaveData" "SaveScalars"
+  Filename = fluxDens.dat
+  Exec Solver = after timestep
+  Save Coordinates(3,3) = Real 0.01299 0.0075 0 0.02075 0.0 0 0.01175 0 0
+  Moving Mesh = Logical True
+  Save component results = Logical False
+End
+
+! fields_solver
+Solver 8
+  Equation = ResultOutputSolver
+  Procedure = "ResultOutputSolve" "ResultOutputSolver"
+  Exec Solver = After Timestep
+  Output File Name = fields
+  Output Format = vtu
+  Single Precision = Logical True
+  Binary Output = Logical False
+  Ascii Output = Logical True
+  Save Geometry Ids = Logical True
+  Discontinuous Bodies = Logical True
+End
+
+
+! n35eh_RingMagnet_1
+Material 1
+  Relative Permeability = Real 1.07
+  Electric Conductivity = Real 0
+  Magnetization 1 = Variable Time, timestep size
+    Real MATC "877583.3310674601*cos(2098.583892597982*(tx(0)-tx(1))+0.0)"
+  Magnetization 2 = Variable Time, timestep size
+    Real MATC "877583.3310674601*sin(2098.583892597982*(tx(0)-tx(1))+0.0)"
+End
+
+! n35eh_RingMagnet_2
+Material 2
+  Relative Permeability = Real 1.07
+  Electric Conductivity = Real 0
+  Magnetization 1 = Variable Time, timestep size
+    Real MATC "877583.3310674601*cos(2098.583892597982*(tx(0)-tx(1))+0.0)"
+  Magnetization 2 = Variable Time, timestep size
+    Real MATC "877583.3310674601*sin(2098.583892597982*(tx(0)-tx(1))+0.0)"
+End
+
+! steel_Shaft_3
+Material 3
+  H-B Curve = Variable coupled iter
+	Real Monotone Cubic
+		0.0 0.0
+		0.472731 31.85111
+		0.951703 62.22722
+		1.191549 92.09444
+		1.311137 118.01111
+		1.327299 122.99778
+		1.362771 136.41
+		1.443033 176.70333
+		1.467546 196.00333
+		1.519306 243.64889
+		1.526116 251.34556
+		1.597592 409.27778
+		1.606725 444.70333
+		1.6691 999.49778
+		1.691862 1437.52222
+		1.742464 2570.96667
+		1.781541 3976.11111
+		1.819971 5600.16667
+		1.870181 7968.98889
+		1.936121 11696.77778
+		2.025563 17893.11111
+		2.108638 27661.22222
+		2.15167 36227.88889
+		2.172291 41894.55556
+		2.284689 106704.4444
+		2.296415 115956.6667
+		2.41177 203216.6667
+		2.425393 214057.7778
+		2.500904 271840.0
+		2.562768 320990.0
+	End
+
+  Electric Conductivity = Real 0
+End
+
+! air_AirGap_Stator_4
+Material 4
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_5
+Material 5
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_6
+Material 6
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_7
+Material 7
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_8
+Material 8
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_9
+Material 9
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_10
+Material 10
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_11
+Material 11
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_12
+Material 12
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_13
+Material 13
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_14
+Material 14
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_15
+Material 15
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! copper_RoundWireConductor_16
+Material 16
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! a_M400_50A_StatorSheetForm1_17
+Material 17
+  H-B Curve = Variable coupled iter
+	Real Monotone Cubic
+		0 0
+		0.31 223.0
+		0.57 415.0
+		0.79 618.0
+		0.97 830.0
+		1.1 1040.0
+		1.2 1320.0
+		1.3 1800.0
+		1.4 2600.0
+		1.5 3800.0
+		1.6 5600.0
+		1.67 7700.0
+		1.74 10700.0
+		1.8 14000.0
+		1.86 18500.0
+		1.94 29000.0
+		2.04 48000.0
+		2.07 55000.0
+		2.1 68000.0
+		2.2 180000.0
+		2.4 450000.0
+		2.6 800000.0
+		2.8 1160000.0
+		3.2 2000000.0
+		4.0 3700000.0
+	End
+
+  Electric Conductivity = Real 0
+End
+
+! air_AirGap_18
+Material 18
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! air_AirGap_19
+Material 19
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+! air_AirGap_20
+Material 20
+  Relative Permeability = Real 1.0
+  Electric Conductivity = Real 0
+End
+
+
+! n35eh_RingMagnet_1
+Body 1
+  Name =  magnet0
+  Equation = 1  ! main
+  Material = 1  ! n35eh_RingMagnet_1
+  Body Force = 1  ! n35eh_RingMagnet_1
+End
+
+! n35eh_RingMagnet_2
+Body 2
+  Name = magnet1
+  Equation = 1  ! main
+  Material = 2  ! n35eh_RingMagnet_2
+  Body Force = 2  ! n35eh_RingMagnet_2
+End
+
+! steel_Shaft_3
+Body 3
+  Name =  shaft
+  Equation = 1  ! main
+  Material = 3  ! steel_Shaft_3
+  Body Force = 3  ! steel_Shaft_3
+End
+
+! air_AirGap_Stator_4
+Body 4
+  Name =  stator_slot_air
+  Equation = 1  ! main
+  Material = 4  ! air_AirGap_Stator_4
+End
+
+! copper_RoundWireConductor_5
+Body 5
+  Name =  stator_slot_0_lce
+  Equation = 1  ! main
+  Material = 5  ! copper_RoundWireConductor_5
+End
+
+! copper_RoundWireConductor_6
+Body 6
+  Name =  stator_slot_0_lle
+  Equation = 1  ! main
+  Material = 6  ! copper_RoundWireConductor_6
+End
+
+! copper_RoundWireConductor_7
+Body 7
+  Name =  stator_slot_1_lce
+  Equation = 1  ! main
+  Material = 7  ! copper_RoundWireConductor_7
+ End
+
+! copper_RoundWireConductor_8
+Body 8
+  Name =  stator_slot_1_lle
+  Equation = 1  ! main
+  Material = 8  ! copper_RoundWireConductor_8
+End
+
+! copper_RoundWireConductor_9
+Body 9
+  Name =  stator_slot_2_lce
+  Equation = 1  ! main
+  Material = 9  ! copper_RoundWireConductor_9
+End
+
+! copper_RoundWireConductor_10
+Body 10
+  Name =  stator_slot_2_lle
+  Equation = 1  ! main
+  Material = 10  ! copper_RoundWireConductor_10
+ End
+
+! copper_RoundWireConductor_11
+Body 11
+  Name = stator_slot_3_lce 
+  Equation = 1  ! main
+  Material = 11  ! copper_RoundWireConductor_11
+ End
+
+! copper_RoundWireConductor_12
+Body 12
+  Name =  stator_slot_3_lle
+  Equation = 1  ! main
+  Material = 12  ! copper_RoundWireConductor_12
+ End
+
+! copper_RoundWireConductor_13
+Body 13
+  Name =  stator_slot_4_lce
+  Equation = 1  ! main
+  Material = 13  ! copper_RoundWireConductor_13
+ End
+
+! copper_RoundWireConductor_14
+Body 14
+  Name =  stator_slot_4_lle
+  Equation = 1  ! main
+  Material = 14  ! copper_RoundWireConductor_14
+ End
+
+! copper_RoundWireConductor_15
+Body 15
+  Name =  stator_slot_5_lce
+  Equation = 1  ! main
+  Material = 15  ! copper_RoundWireConductor_15
+ End
+
+! copper_RoundWireConductor_16
+Body 16
+  Name =  stator_slot_5_lle
+  Equation = 1  ! main
+  Material = 16  ! copper_RoundWireConductor_16
+  End
+
+! a_M400_50A_StatorSheetForm1_17
+Body 17
+  Name = stator 
+  Equation = 1  ! main
+  Material = 17  ! a_M400_50A_StatorSheetForm1_17
+End
+
+! air_AirGap_18
+Body 18
+  Name =  stator_airgap
+  Equation = 1  ! main
+  Material = 18  ! air_AirGap_18
+End
+
+! air_AirGap_19
+Body 19
+  Name =  middle_airgap
+  Equation = 1  ! main
+  Material = 19  ! air_AirGap_19
+  Body Force = 4  ! air_AirGap_19
+End
+
+! air_AirGap_20
+Body 20
+  Name =  rotor_airgap
+  Equation = 1  ! main
+  Material = 20  ! air_AirGap_20
+  Body Force = 5  ! air_AirGap_20
+End
+
+! Airbox
+Body 21
+  Name = airbox 
+  Equation = 1  ! main
+  Material = 20  ! air_AirGap_20
+ 
+End
+
+
+! outer
+Boundary Condition 1
+  Name = outer_airbox_face
+  AV {e} = real 0 !Vector Potential
+  AV = real 0	  !scalar Potential
+End
+
+! stator_airgap
+Boundary Condition 2
+  Name =  rotational_mortar_airgap_curve
+  Mortar BC = 4
+ !Cylindrical Projector = True
+  Rotational Projector = Logical True
+ !Projector Skip Nodes = True
+  Discontinuous Boundary = Logical True
+ Level Projector Extruded Edges Strong= False
+  !Level Projector = False
+ level projector strong= false
+Galerkin Projector = Logical True
+End
+
+
+! n35eh_RingMagnet_1
+Body Force 1
+  Mesh Rotate 3 = Variable Time
+	Real MATC "(180/pi)*2098.583892597982*tx"
+End
+
+! n35eh_RingMagnet_2
+Body Force 2
+  Mesh Rotate 3 = Variable Time
+	Real MATC "(180/pi)*2098.583892597982*tx"
+End
+
+! steel_Shaft_3
+Body Force 3
+  Mesh Rotate 3 = Variable Time
+	Real MATC "(180/pi)*2098.583892597982*tx"
+End
+
+! air_AirGap_19
+Body Force 4
+  Mesh Rotate 3 = Variable Time
+	Real MATC "(180/pi)*2098.583892597982*tx"
+End
+
+! air_AirGap_20
+Body Force 5
+  Mesh Rotate 3 = Variable Time
+	Real MATC "(180/pi)*2098.583892597982*tx"
+End
+
+
+! rotor
+Component 1
+  Name = rotor
+  Master Bodies(3) = 1 2 3
+  Calculate Magnetic Force = Logical True
+  Calculate Magnetic Torque = Logical True
+  Torque Origin(3) = Real 0.0 0.0 0.0
+  Torque Axis(3) = Real 0.0 0.0 1.0
+End
+
+
